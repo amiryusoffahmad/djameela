@@ -1,232 +1,194 @@
-"use client";
-
-import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { getProductBySlug } from "@/lib/woocommerce";
 import Navbar from "@/components/Navbar";
-import {
-  Star,
-  ShieldCheck,
-  Truck,
-  Sparkles,
-  Minus,
-  Plus,
-  Check,
+import AddToCartButton from "@/components/AddToCartButton";
+import { 
+  Star, 
+  Clock, 
+  Sparkles, 
+  HeartHandshake, 
+  Package, 
+  Truck, 
+  CreditCard, 
+  ShieldCheck 
 } from "lucide-react";
 
-export default function ProductDetailPage() {
-  const [selectedImage, setSelectedImage] = useState(0);
-  const [quantity, setQuantity] = useState(1);
-  const [activeTab, setActiveTab] = useState("tentang");
+interface ProductPageProps {
+  params: Promise<{ slug: string }>;
+}
 
-  const images = [
-    "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=800&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1547887537-6158d64c35b3?q=80&w=800&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1523293182086-7651a899d37f?q=80&w=800&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=800&auto=format&fit=crop",
-  ];
+export default async function ProductDetailPage({ params }: ProductPageProps) {
+  const { slug } = await params;
+  const product = (await getProductBySlug(slug)) as any;
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-[#F8F5F0] flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="text-2xl font-serif font-bold text-[#2D2826] mb-2">Produk Tidak Ditemui</h1>
+        <p className="text-stone-600 mb-6 text-sm">Maaf, produk yang anda cari tidak wujud atau telah dipadam.</p>
+        <Link href="/shop" className="px-6 py-3 bg-[#2D2826] text-white rounded-xl text-xs font-semibold hover:bg-stone-800 transition">
+          Kembali ke Koleksi
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-brand-beige text-brand-charcoal font-sans pb-20">
+    <div className="min-h-screen bg-[#F8F5F0] text-[#2D2826]">
       <Navbar />
 
-      {/* BREADCRUMB */}
-      <div className="max-w-7xl mx-auto px-6 pt-6 text-xs text-brand-charcoal/60 flex items-center gap-2">
-        <Link href="/" className="hover:text-brand-burgundy">Home</Link>
-        <span>/</span>
-        <Link href="/shop" className="hover:text-brand-burgundy">Produk</Link>
-        <span>/</span>
-        <span className="text-brand-burgundy font-medium">Embun Sence</span>
-      </div>
-
-      {/* PRODUCT MAIN SECTION */}
-      <section className="max-w-7xl mx-auto px-6 py-8 grid md:grid-cols-2 gap-12 items-start">
-        {/* GALLERY */}
-        <div className="space-y-4">
-          <div className="relative h-105 md:h-125 w-full rounded-2xl overflow-hidden bg-white border border-brand-sand shadow-sm">
-            <Image
-              src={images[selectedImage]}
-              alt="Embun Sence"
-              fill
-              className="object-cover transition-all duration-300"
-              priority
-            />
-          </div>
-
-          {/* THUMBNAILS */}
-          <div className="grid grid-cols-4 gap-4">
-            {images.map((img, idx) => (
-              <button
-                key={idx}
-                onClick={() => setSelectedImage(idx)}
-                className={`relative h-20 rounded-xl overflow-hidden border-2 transition-all ${
-                  selectedImage === idx
-                    ? "border-brand-burgundy scale-95"
-                    : "border-transparent opacity-70 hover:opacity-100"
-                }`}
-              >
-                <Image src={img} alt={`Thumb ${idx}`} fill className="object-cover" />
-              </button>
-            ))}
-          </div>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* BREADCRUMBS */}
+        <div className="flex items-center gap-2 text-xs text-stone-500 mb-6">
+          <Link href="/shop" className="hover:text-black transition">Home</Link>
+          <span>&gt;</span>
+          <Link href="/shop" className="hover:text-black transition">Produk</Link>
+          <span>&gt;</span>
+          <span className="text-stone-800 font-medium">{product.name}</span>
         </div>
 
-        {/* DETAILS */}
-        <div className="space-y-6">
-          <div>
-            <h1 className="font-serif text-3xl sm:text-4xl font-bold text-brand-burgundy">
-              Embun Sence
-            </h1>
-            <p className="text-sm text-brand-rose font-medium mt-1">Perfume Mist | 100ml</p>
-            <p className="text-2xl font-bold text-brand-burgundy mt-3">RM129</p>
+        {/* MAIN PRODUCT SECTION */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 bg-white p-6 md:p-10 rounded-3xl border border-stone-100 shadow-sm">
+          
+          {/* BAHAGIAN GAMBAR & THUMBNAILS */}
+          <div className="space-y-4">
+            <div className="relative aspect-square rounded-2xl overflow-hidden bg-stone-100 border border-stone-100">
+              {product.image?.sourceUrl ? (
+                <Image
+                  src={product.image.sourceUrl}
+                  alt={product.image.altText || product.name}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-stone-400 text-xs">Tiada Imej</div>
+              )}
+            </div>
 
-            {/* RATING */}
-            <div className="flex items-center gap-2 mt-2">
-              <div className="flex text-amber-400">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-amber-400" />
-                ))}
-              </div>
-              <span className="text-xs text-brand-charcoal/70 font-medium">(128 ulasan)</span>
+            {/* Thumbnail Gallery */}
+            <div className="grid grid-cols-4 gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div 
+                  key={i} 
+                  className={`relative aspect-square rounded-xl overflow-hidden bg-stone-100 border cursor-pointer transition ${
+                    i === 1 ? "border-[#A86B6C]" : "border-stone-200 opacity-70 hover:opacity-100"
+                  }`}
+                >
+                  {product.image?.sourceUrl && (
+                    <Image src={product.image.sourceUrl} alt="Thumbnail" fill className="object-cover" />
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 
-          <p className="text-brand-charcoal/80 text-sm leading-relaxed border-t border-brand-sand/60 pt-4">
-            Wangian lembut dan menyegarkan, dicipta untuk wanita yang mahu tampil yakin, anggun dan memikat dalam setiap langkah.
-          </p>
+          {/* BAHAGIAN MAKLUMAT PRODUK */}
+          <div className="flex flex-col justify-between">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900 mb-1">
+                {product.name}
+              </h1>
+              <p className="text-xs text-stone-500 mb-3">Perfume Mist | 100ml</p>
+              
+              {/* Harga */}
+              <div 
+                className="text-2xl font-bold text-[#A86B6C] mb-2" 
+                dangerouslySetInnerHTML={{ __html: product.price || "RM129" }} 
+              />
 
-          {/* FEATURES BULLETS */}
-          <div className="space-y-2.5 text-xs text-brand-charcoal/80">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-brand-burgundy" />
-              <span>Tahan lama sehingga 12 jam</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-brand-burgundy" />
-              <span>Wangian eksklusif bertaraf premium</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-brand-burgundy" />
-              <span>Sesuai untuk harian & majlis khas</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-brand-burgundy" />
-              <span>Mesra wuduk & mudah dibawa ke mana-mana</span>
-            </div>
-          </div>
+              {/* Rating */}
+              <div className="flex items-center gap-1 text-xs text-stone-500 mb-4">
+                <div className="flex text-amber-400">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={13} fill="currentColor" />
+                  ))}
+                </div>
+                <span className="font-medium text-stone-700">(128 ulasan)</span>
+              </div>
 
-          {/* QUANTITY & ADD TO CART */}
-          <div className="space-y-4 border-t border-brand-sand/60 pt-6">
-            <div className="flex items-center gap-4">
-              <span className="text-xs font-semibold text-brand-burgundy uppercase tracking-wider">Kuantiti:</span>
-              <div className="flex items-center border border-brand-sand bg-white rounded-full px-3 py-1.5 gap-4">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="text-brand-burgundy hover:opacity-75"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <span className="text-sm font-semibold w-4 text-center">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="text-brand-burgundy hover:opacity-75"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
+              {/* Penerangan Ringkas */}
+              <p className="text-stone-600 text-xs sm:text-sm leading-relaxed mb-6">
+                Wangian lembut dan menyegarkan, dicipta untuk wanita yang mahu tampil yakin, anggun dan memikat dalam setiap langkah.
+              </p>
+
+              {/* Ciri-ciri Cepat (Bullets dengan Ikon) */}
+              <div className="space-y-2.5 py-4 border-y border-stone-100 mb-6 text-xs text-stone-700">
+                <div className="flex items-center gap-2.5">
+                  <Clock size={16} className="text-[#A86B6C] shrink-0" />
+                  <span>Tahan lama</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Sparkles size={16} className="text-[#A86B6C] shrink-0" />
+                  <span>Wangian eksklusif</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <HeartHandshake size={16} className="text-[#A86B6C] shrink-0" />
+                  <span>Sesuai untuk harian & majlis khas</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Package size={16} className="text-[#A86B6C] shrink-0" />
+                  <span>Mudah dibawa ke mana-mana</span>
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <button className="flex-1 bg-brand-burgundy text-brand-beige py-3.5 rounded-full font-medium text-sm hover:bg-brand-burgundy/90 transition-colors shadow-md">
-                Tambah ke Troli
-              </button>
+            {/* BUTTONS ACTION & TRUST BADGES */}
+            <div className="space-y-4 pt-2">
+              <AddToCartButton product={product} />
+
               <Link
                 href="/cart"
-                className="flex-1 border border-brand-burgundy text-brand-burgundy py-3.5 rounded-full font-medium text-sm hover:bg-brand-burgundy hover:text-brand-beige transition-colors text-center"
+                className="w-full py-3.5 bg-stone-100 text-[#2D2826] rounded-2xl text-xs font-semibold hover:bg-stone-200 transition text-center block border border-stone-200 shadow-sm"
               >
                 Beli Sekarang
               </Link>
-            </div>
-          </div>
 
-          {/* TRUST BADGES */}
-          <div className="grid grid-cols-3 gap-2 pt-4 border-t border-brand-sand/60 text-center">
-            <div className="flex flex-col items-center gap-1.5">
-              <Truck className="w-5 h-5 text-brand-burgundy" />
-              <span className="text-[10px] text-brand-charcoal/70">Penghantaran Seluruh Malaysia</span>
-            </div>
-            <div className="flex flex-col items-center gap-1.5">
-              <ShieldCheck className="w-5 h-5 text-brand-burgundy" />
-              <span className="text-[10px] text-brand-charcoal/70">Pembayaran Selamat (FPX, Card)</span>
-            </div>
-            <div className="flex flex-col items-center gap-1.5">
-              <Sparkles className="w-5 h-5 text-brand-burgundy" />
-              <span className="text-[10px] text-brand-charcoal/70">Jaminan Produk Original</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* PRODUCT TABS SECTION */}
-      <section className="max-w-7xl mx-auto px-6 mt-12">
-        <div className="bg-white rounded-2xl p-6 md:p-8 border border-brand-sand shadow-sm">
-          <div className="flex border-b border-brand-sand gap-6 md:gap-12 pb-4 overflow-x-auto text-sm font-medium">
-            {[
-              { id: "tentang", label: "Tentang Produk" },
-              { id: "guna", label: "Cara Penggunaan" },
-              { id: "bahan", label: "Bahan-Bahan" },
-              { id: "ulasan", label: "Ulasan (128)" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`pb-2 border-b-2 transition-all whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "border-brand-burgundy text-brand-burgundy font-bold"
-                    : "border-transparent text-brand-charcoal/60 hover:text-brand-burgundy"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="pt-6 text-sm text-brand-charcoal/80 leading-relaxed">
-            {activeTab === "tentang" && (
-              <p>
-                Embun Sence ialah perfume mist yang direka khas dengan haruman feminin yang lembut, segar dan memikat. Sesuai untuk digunakan setiap hari, sama ada di pejabat, majlis khas, mahupun ketika santai bersama yang tersayang.
-              </p>
-            )}
-            {activeTab === "guna" && (
-              <p>
-                Semburkan pada jarak 15-20cm dari kulit pada titik nadi seperti pergelangan tangan, leher, dan belakang telinga untuk ketahanan haruman yang lebih berpanjangan.
-              </p>
-            )}
-            {activeTab === "bahan" && (
-              <p>
-                Aqua, Premium Perfume Fragrance Oil, Organic Denatured Alcohol, Glycerin, Natural Plant Extracts (Botanical Blend).
-              </p>
-            )}
-            {activeTab === "ulasan" && (
-              <div className="space-y-4">
-                <div className="border-b border-brand-sand/40 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-brand-burgundy text-xs">Nur Aisyah</span>
-                    <div className="flex text-amber-400">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-3 h-3 fill-amber-400" />
-                      ))}
-                    </div>
-                  </div>
-                  <p className="text-xs text-brand-charcoal/70 mt-1">
-                    &quot;Wangian Embun Sence sangat lembut dan tahan lama. Saya pakai setiap hari ke pejabat. Memang suka!&quot;
-                  </p>
+              {/* Trust Badges */}
+              <div className="grid grid-cols-3 gap-2 pt-4 border-t border-stone-100 text-[10px] text-stone-500 text-center">
+                <div className="flex flex-col items-center gap-1">
+                  <Truck size={16} className="text-[#A86B6C]" />
+                  <span>Penghantaran seluruh Malaysia</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <CreditCard size={16} className="text-[#A86B6C]" />
+                  <span>Pembayaran selamat (FPX, Kad, eWallet)</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <ShieldCheck size={16} className="text-[#A86B6C]" />
+                  <span>Jaminan produk original</span>
                 </div>
               </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* TAB MAKLUMAT TAMBAHAN BAWAH */}
+        <div className="mt-10 bg-white rounded-3xl p-6 sm:p-8 border border-stone-100 shadow-sm">
+          <div className="flex gap-6 sm:gap-8 border-b border-stone-100 pb-4 text-xs sm:text-sm font-semibold text-stone-400 overflow-x-auto scrollbar-none">
+            <button className="text-stone-900 border-b-2 border-[#A86B6C] pb-1 whitespace-nowrap">Tentang Produk</button>
+            <button className="hover:text-stone-900 transition pb-1 whitespace-nowrap">Cara Penggunaan</button>
+            <button className="hover:text-stone-900 transition pb-1 whitespace-nowrap">Bahan-Bahan</button>
+            <button className="hover:text-stone-900 transition pb-1 whitespace-nowrap">Ulasan (128)</button>
+          </div>
+          <div className="pt-6 text-xs sm:text-sm text-stone-600 leading-relaxed space-y-3">
+            <p>
+              <strong className="text-stone-800">{product.name}</strong> ialah perfume mist yang direka khas dengan haruman feminin yang lembut, segar dan memikat. Sesuai digunakan setiap hari, sama ada di pejabat, majlis atau ketika santai.
+            </p>
+            {product.description && (
+              <div 
+                className="prose prose-sm text-stone-600"
+                dangerouslySetInnerHTML={{ __html: product.description }} 
+              />
             )}
           </div>
         </div>
-      </section>
+
+      </main>
     </div>
   );
 }

@@ -21,9 +21,12 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
+      {
+        protocol: "https",
+        hostname: "grey-woodcock-759599.hostingersite.com",
+      },
     ],
   },
 };
 
 export default nextConfig;
-

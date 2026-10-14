@@ -3,8 +3,31 @@ import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { Sparkles, ShieldCheck, Truck, CreditCard, ArrowRight } from "lucide-react";
+import { fetchGraphQL } from "@/lib/woocommerce";
 
-export default function Home() {
+// Query GraphQL yang lebih selamat (mengelakkan ralat jika produk tiada imej)
+const GET_HOME_PRODUCTS = `
+  query GetHomeProducts {
+    products(first: 3) {
+      nodes {
+        id
+        name
+        slug
+      }
+    }
+  }
+`;
+
+export default async function Home() {
+  let products = [];
+  try {
+    // Tambah 'as any' di sini supaya TypeScript kenal struktur data GraphQL
+    const data = (await fetchGraphQL(GET_HOME_PRODUCTS)) as any;
+    products = data?.products?.nodes || [];
+  } catch (error) {
+    console.error("Gagal menarik produk untuk homepage:", error);
+  }
+
   return (
     <div className="min-h-screen bg-brand-beige text-brand-charcoal font-sans">
       <Navbar />
@@ -35,6 +58,7 @@ export default function Home() {
               src="https://images.unsplash.com/photo-1547887537-6158d64c35b3?q=80&w=1200&auto=format&fit=crop"
               alt="Djameelaa Hero"
               fill
+              sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
               priority
             />
@@ -76,71 +100,46 @@ export default function Home() {
         </div>
 
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8">
-          {/* Card 1 */}
-          <div className="bg-white p-6 rounded-2xl border border-brand-sand shadow-sm space-y-4 text-center">
-            <div className="relative h-64 w-full rounded-xl overflow-hidden bg-brand-beige">
-              <Image
-                src="https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=600&auto=format&fit=crop"
-                alt="Embun Sence"
-                fill
-                className="object-cover"
-              />
-            </div>
-            <div>
-              <h3 className="font-serif text-xl font-bold text-brand-burgundy">Embun Sence</h3>
-              <p className="text-brand-rose font-bold mt-1">RM129</p>
-            </div>
-            <Link
-              href="/product/embun-sence"
-              className="block w-full border border-brand-burgundy text-brand-burgundy py-2.5 rounded-full text-sm font-medium hover:bg-brand-burgundy hover:text-brand-beige transition-colors"
-            >
-              Lihat Produk
-            </Link>
-          </div>
-
-          {/* Card 2 */}
-          <div className="bg-white p-6 rounded-2xl border border-brand-sand shadow-sm space-y-4 text-center">
-            <div className="relative h-64 w-full rounded-xl overflow-hidden bg-brand-beige">
-              <Image
-                src="https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?q=80&w=600&auto=format&fit=crop"
-                alt="Set Hadiah"
-                fill
-                className="object-cover"
-              />
-            </div>
-            <div>
-              <h3 className="font-serif text-xl font-bold text-brand-burgundy">Set Hadiah</h3>
-              <p className="text-brand-rose font-bold mt-1">RM199</p>
-            </div>
-            <Link
-              href="/shop"
-              className="block w-full border border-brand-burgundy text-brand-burgundy py-2.5 rounded-full text-sm font-medium hover:bg-brand-burgundy hover:text-brand-beige transition-colors"
-            >
-              Lihat Produk
-            </Link>
-          </div>
-
-          {/* Card 3 */}
-          <div className="bg-white p-6 rounded-2xl border border-brand-sand shadow-sm space-y-4 text-center">
-            <div className="relative h-64 w-full rounded-xl overflow-hidden bg-brand-beige">
-              <Image
-                src="https://images.unsplash.com/photo-1523293182086-7651a899d37f?q=80&w=600&auto=format&fit=crop"
-                alt="Wangian Travel Size"
-                fill
-                className="object-cover"
-              />
-            </div>
-            <div>
-              <h3 className="font-serif text-xl font-bold text-brand-burgundy">Wangian Travel Size</h3>
-              <p className="text-brand-rose font-bold mt-1">RM39</p>
-            </div>
-            <Link
-              href="/shop"
-              className="block w-full border border-brand-burgundy text-brand-burgundy py-2.5 rounded-full text-sm font-medium hover:bg-brand-burgundy hover:text-brand-beige transition-colors"
-            >
-              Lihat Produk
-            </Link>
-          </div>
+          {products.length > 0 ? (
+            products.map((product: any) => (
+              <div 
+                key={product.databaseId || product.id} 
+                className="bg-white p-6 rounded-2xl border border-brand-sand shadow-sm space-y-4 text-center flex flex-col justify-between"
+              >
+                <div>
+                  <div className="relative h-64 w-full rounded-xl overflow-hidden bg-brand-beige mb-4">
+                    {product.image?.sourceUrl ? (
+                      <Image
+                        src={product.image.sourceUrl}
+                        alt={product.image.altText || product.name}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-stone-400 text-xs">Tiada Imej</div>
+                    )}
+                  </div>
+                  <h3 className="font-serif text-xl font-bold text-brand-burgundy">{product.name}</h3>
+                  <div 
+                    className="text-brand-rose font-bold mt-1"
+                    dangerouslySetInnerHTML={{ __html: product.price || "" }}
+                  />
+                </div>
+                
+                <Link
+                  href={`/product/${product.slug}`}
+                  className="block w-full border border-brand-burgundy text-brand-burgundy py-2.5 rounded-full text-sm font-medium hover:bg-brand-burgundy hover:text-brand-beige transition-colors"
+                >
+                  Lihat Produk
+                </Link>
+              </div>
+            ))
+          ) : (
+            <p className="col-span-3 text-center text-stone-500 text-sm py-10">
+              Tiada produk dijumpai. Sila pastikan produk telah diterbitkan di WooCommerce.
+            </p>
+          )}
         </div>
       </section>
 

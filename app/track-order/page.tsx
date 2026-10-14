@@ -1,235 +1,163 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
-import {
-  Search,
-  CheckCircle2,
-  Package,
-  Truck,
-  Check,
-  LayoutDashboard,
-  ShoppingBag,
-  Heart,
-  User,
-  LogOut,
-} from "lucide-react";
+import { Search, PackageCheck, Clock, CheckCircle2, Truck, AlertCircle, Loader2 } from "lucide-react";
 
-export default function TrackOrderPage() {
-  const [orderId, setOrderId] = useState("");
-  const [hasSearched, setHasSearched] = useState(true); // Set true default for preview
+function TrackOrderContent() {
+  const searchParams = useSearchParams();
+  const initialId = searchParams.get("id") || "";
 
-  // Mock status steps: 1 = Pesanan Diterima, 2 = Sedang Diproses, 3 = Dalam Penghantaran, 4 = Selesai
-const currentStep: number = 3;
+  const [orderId, setOrderId] = useState(initialId);
+  const [inputVal, setInputVal] = useState(initialId);
+  const [orderData, setOrderData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const fetchOrder = async (idToFetch: string) => {
+    if (!idToFetch) return;
+    setLoading(true);
+    setError("");
+    setOrderData(null);
+
+    try {
+      const res = await fetch(`/api/get-order?id=${idToFetch}`);
+      const data = await res.json();
+
+      if (res.ok && !data.error) {
+        setOrderData(data);
+      } else {
+        setError(data.error || "Pesanan tidak dijumpai. Sila semak nombor ID.");
+      }
+    } catch (err) {
+      setError("Gagal menyambung ke pelayan.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (initialId) {
+      fetchOrder(initialId);
+    }
+  }, [initialId]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (orderId.trim()) {
-      setHasSearched(true);
+    if (inputVal.trim()) {
+      setOrderId(inputVal.trim());
+      fetchOrder(inputVal.trim());
+    }
+  };
+
+  // Helper untuk terjemah status WooCommerce ke Bahasa Melayu
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "pending":
+        return <span className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"><Clock size={14}/> Menunggu Bayaran (Pending)</span>;
+      case "processing":
+        return <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"><PackageCheck size={14}/> Sedang Diproses (Processing)</span>;
+      case "completed":
+        return <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"><CheckCircle2 size={14}/> Selesai / Dihantar (Completed)</span>;
+      default:
+        return <span className="bg-stone-100 text-stone-700 px-3 py-1 rounded-full text-xs font-semibold">{status}</span>;
     }
   };
 
   return (
-    <div className="min-h-screen bg-brand-beige text-brand-charcoal font-sans pb-20">
+    <main className="max-w-2xl mx-auto px-4 py-10 space-y-8">
+      <div className="bg-white p-8 rounded-3xl border border-stone-100 shadow-sm text-center space-y-4">
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900">Jejak Status Pesanan</h1>
+        <p className="text-xs sm:text-sm text-stone-600">Masukkan nombor pesanan anda untuk menyemak status terkini dari sistem.</p>
+
+        <form onSubmit={handleSearch} className="flex gap-2 max-w-md mx-auto pt-2">
+          <input
+            type="text"
+            placeholder="Cth: 25"
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            className="flex-1 bg-[#F8F5F0] border border-stone-200 rounded-2xl px-4 py-3 text-xs focus:outline-none focus:border-stone-400"
+          />
+          <button type="submit" className="px-6 py-3 bg-[#2D2826] text-white rounded-2xl text-xs font-semibold hover:bg-stone-800 transition flex items-center gap-2">
+            <Search size={14} />
+            <span>Semak</span>
+          </button>
+        </form>
+      </div>
+
+      {loading && (
+        <div className="flex justify-center py-10">
+          <Loader2 className="animate-spin text-[#A86B6C]" size={32} />
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl text-rose-700 text-xs flex items-center gap-2">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {orderData && (
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-stone-100 shadow-sm space-y-6">
+          <div className="flex justify-between items-center border-b border-stone-100 pb-4">
+            <div>
+              <p className="text-xs text-stone-400">ID Pesanan</p>
+              <h2 className="font-mono font-bold text-lg text-stone-900">#{orderData.id}</h2>
+            </div>
+            <div>{getStatusBadge(orderData.status)}</div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <p className="text-stone-400">Tarikh:</p>
+              <p className="font-semibold text-stone-800">{new Date(orderData.date_created).toLocaleDateString("ms-MY")}</p>
+            </div>
+            <div>
+              <p className="text-stone-400">Kaedah Pembayaran:</p>
+              <p className="font-semibold text-stone-800">{orderData.payment_method_title}</p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-stone-400">Penerima & Alamat:</p>
+              <p className="font-semibold text-stone-800">{orderData.billing.first_name} {orderData.billing.last_name} ({orderData.billing.phone})</p>
+              <p className="text-stone-600">{orderData.billing.address_1}, {orderData.billing.postcode} {orderData.billing.city}, {orderData.billing.state}</p>
+            </div>
+          </div>
+
+          <div className="border-t border-stone-100 pt-4 space-y-2">
+            <p className="text-xs font-semibold text-stone-800">Senarai Produk:</p>
+            {orderData.line_items.map((item: any) => (
+              <div key={item.id} className="flex justify-between text-xs py-1 border-b border-stone-50">
+                <span>{item.name} (x{item.quantity})</span>
+                <span className="font-semibold">RM {item.total}</span>
+              </div>
+            ))}
+            <div className="flex justify-between font-bold text-sm pt-2 text-stone-900">
+              <span>Jumlah Keseluruhan:</span>
+              <span className="text-[#A86B6C]">RM {orderData.total}</span>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <Link href="/shop" className="block text-center w-full py-3 bg-stone-100 text-stone-800 rounded-2xl text-xs font-semibold hover:bg-stone-200 transition">
+              Kembali ke Kedai
+            </Link>
+          </div>
+        </div>
+      )}
+    </main>
+  );
+}
+
+export default function TrackOrderPage() {
+  return (
+    <div className="min-h-screen bg-[#F8F5F0] text-[#2D2826] font-sans pb-20">
       <Navbar />
-
-      {/* TRACK ORDER SECTION */}
-      <section className="max-w-4xl mx-auto px-6 pt-12 pb-10">
-        <div className="text-center space-y-3 mb-8">
-          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-brand-burgundy">
-            Track Order
-          </h1>
-          <p className="text-brand-charcoal/70 text-sm">
-            Masukkan nombor pesanan anda untuk semak status penghantaran.
-          </p>
-
-          {/* SEARCH FORM */}
-          <form
-            onSubmit={handleSearch}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-lg mx-auto pt-4"
-          >
-            <div className="relative w-full">
-              <input
-                type="text"
-                placeholder="Contoh: DJM12345"
-                value={orderId}
-                onChange={(e) => setOrderId(e.target.value)}
-                className="w-full bg-white border border-brand-sand rounded-full px-5 py-3 text-sm focus:outline-none focus:border-brand-burgundy transition-colors text-brand-charcoal"
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full sm:w-auto bg-brand-burgundy text-brand-beige px-7 py-3 rounded-full text-xs font-semibold uppercase tracking-wider hover:bg-brand-burgundy/90 transition-colors whitespace-nowrap"
-            >
-              Semak Status
-            </button>
-          </form>
-        </div>
-
-        {/* STATUS STEPPER TIMELINE */}
-        {hasSearched && (
-          <div className="bg-white rounded-2xl p-6 sm:p-10 border border-brand-sand shadow-sm space-y-8 mt-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-brand-sand/60 pb-4 gap-2">
-              <div>
-                <span className="text-xs text-brand-charcoal/60 uppercase font-semibold">
-                  Nombor Pesanan
-                </span>
-                <p className="font-serif text-xl font-bold text-brand-burgundy">
-                  #DJM12345
-                </p>
-              </div>
-              <div className="text-left sm:text-right">
-                <span className="text-xs text-brand-charcoal/60 uppercase font-semibold">
-                  Jangkaan Tiba
-                </span>
-                <p className="text-sm font-semibold text-brand-rose">
-                  12 Oktober 2026
-                </p>
-              </div>
-            </div>
-
-            {/* STEPPER PROGRESS */}
-            <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-0">
-              {/* Line Connector (Desktop) */}
-              <div className="hidden md:block absolute top-5 left-12 right-12 h-0.5 bg-brand-sand z-0">
-                <div
-                  className="h-full bg-brand-burgundy transition-all duration-500"
-                  style={{
-                    width:
-                      currentStep === 1
-                        ? "0%"
-                        : currentStep === 2
-                        ? "33%"
-                        : currentStep === 3
-                        ? "66%"
-                        : "100%",
-                  }}
-                ></div>
-              </div>
-
-              {/* Step 1 */}
-              <div className="relative z-10 flex md:flex-col items-center gap-4 md:gap-2 text-left md:text-center">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold ${
-                    currentStep >= 1
-                      ? "bg-brand-burgundy text-brand-beige"
-                      : "bg-brand-sand/60 text-brand-charcoal/60"
-                  }`}
-                >
-                  {currentStep > 1 ? <Check className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-brand-burgundy">Pesanan Diterima</p>
-                  <p className="text-[10px] text-brand-charcoal/60">9 Oct, 10:30 AM</p>
-                </div>
-              </div>
-
-              {/* Step 2 */}
-              <div className="relative z-10 flex md:flex-col items-center gap-4 md:gap-2 text-left md:text-center">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold ${
-                    currentStep >= 2
-                      ? "bg-brand-burgundy text-brand-beige"
-                      : "bg-brand-sand/60 text-brand-charcoal/60"
-                  }`}
-                >
-                  {currentStep > 2 ? <Check className="w-5 h-5" /> : <Package className="w-5 h-5" />}
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-brand-burgundy">Sedang Diproses</p>
-                  <p className="text-[10px] text-brand-charcoal/60">9 Oct, 02:15 PM</p>
-                </div>
-              </div>
-
-              {/* Step 3 */}
-              <div className="relative z-10 flex md:flex-col items-center gap-4 md:gap-2 text-left md:text-center">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold ${
-                    currentStep >= 3
-                      ? "bg-brand-burgundy text-brand-beige animate-pulse"
-                      : "bg-brand-sand/60 text-brand-charcoal/60"
-                  }`}
-                >
-                  <Truck className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-brand-burgundy">Dalam Penghantaran</p>
-                  <p className="text-[10px] text-brand-charcoal/60">NinjaVan: NVMY982312</p>
-                </div>
-              </div>
-
-              {/* Step 4 */}
-              <div className="relative z-10 flex md:flex-col items-center gap-4 md:gap-2 text-left md:text-center">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold ${
-                    currentStep >= 4
-                      ? "bg-brand-burgundy text-brand-beige"
-                      : "bg-brand-sand/60 text-brand-charcoal/60"
-                  }`}
-                >
-                  <Check className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-brand-burgundy">Selesai</p>
-                  <p className="text-[10px] text-brand-charcoal/60">Belum Selesai</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* AKAUN SAYA SECTION */}
-      <section className="max-w-4xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-brand-sand shadow-sm space-y-6">
-          <h2 className="font-serif text-2xl font-bold text-brand-burgundy border-b border-brand-sand/60 pb-4 text-center sm:text-left">
-            Akaun Saya
-          </h2>
-
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-            <Link
-              href="/account/dashboard"
-              className="flex items-center gap-3 p-4 rounded-xl border border-brand-sand/80 hover:border-brand-burgundy hover:bg-brand-beige/50 transition-all text-brand-burgundy font-medium text-sm"
-            >
-              <LayoutDashboard className="w-5 h-5 text-brand-rose" />
-              <span>Dashboard</span>
-            </Link>
-
-            <Link
-              href="/account/orders"
-              className="flex items-center gap-3 p-4 rounded-xl border border-brand-sand/80 hover:border-brand-burgundy hover:bg-brand-beige/50 transition-all text-brand-burgundy font-medium text-sm"
-            >
-              <ShoppingBag className="w-5 h-5 text-brand-rose" />
-              <span>Pesanan Saya</span>
-            </Link>
-
-            <Link
-              href="/account/wishlist"
-              className="flex items-center gap-3 p-4 rounded-xl border border-brand-sand/80 hover:border-brand-burgundy hover:bg-brand-beige/50 transition-all text-brand-burgundy font-medium text-sm"
-            >
-              <Heart className="w-5 h-5 text-brand-rose" />
-              <span>Wishlist</span>
-            </Link>
-
-            <Link
-              href="/account/profile"
-              className="flex items-center gap-3 p-4 rounded-xl border border-brand-sand/80 hover:border-brand-burgundy hover:bg-brand-beige/50 transition-all text-brand-burgundy font-medium text-sm"
-            >
-              <User className="w-5 h-5 text-brand-rose" />
-              <span>Maklumat Akaun</span>
-            </Link>
-
-            <button
-              onClick={() => alert("Log keluar dari akaun.")}
-              className="flex items-center gap-3 p-4 rounded-xl border border-red-100 bg-red-50/50 hover:bg-red-100/60 transition-all text-red-600 font-medium text-sm text-left"
-            >
-              <LogOut className="w-5 h-5" />
-              <span>Log Keluar</span>
-            </button>
-          </div>
-        </div>
-      </section>
+      <Suspense fallback={<div className="text-center py-20 text-xs text-stone-500">Memuatkan...</div>}>
+        <TrackOrderContent />
+      </Suspense>
     </div>
   );
 }

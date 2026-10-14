@@ -1,110 +1,61 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import Link from "next/link";
-import { ShoppingBag, Search, Menu, X, User } from "lucide-react";
+import Link from 'next/link';
+import { Search, User, ShoppingBag } from 'lucide-react';
+import { useCart } from '@/store/useCart';
 
 export default function Navbar() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // Ambil data items dari Zustand store
+  const items = useCart((state) => state.items);
+  const setIsOpen = useCart((state) => state.setIsOpen);
 
-  const navLinks = [
-    { name: "Utama", href: "/" },
-    { name: "Koleksi", href: "/shop" },
-    { name: "Tentang Kami", href: "/about" },
-    { name: "Jurnal", href: "/blog" },
-    { name: "Track Order", href: "/track-order" },
-  ];
+  // Kira jumlah kuantiti keseluruhan produk dalam troli
+  const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <nav className="sticky top-0 z-50 bg-brand-beige/95 backdrop-blur-md border-b border-brand-sand">
-      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+    <header className="sticky top-0 z-40 bg-[#F8F5F0]/90 backdrop-blur-md border-b border-stone-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
-        {/* BRAND LOGO */}
-        <Link href="/" className="flex flex-col items-start">
-          <span className="font-serif text-2xl font-bold tracking-widest text-brand-burgundy uppercase">
-            DJAMEELAA
-          </span>
-          <span className="text-[9px] tracking-[0.25em] text-brand-rose font-medium uppercase -mt-1">
-            Scent Your Story
-          </span>
+        {/* Logo Jenama */}
+        <Link href="/shop" className="flex flex-col">
+          <span className="text-2xl font-bold tracking-widest text-[#2D2826] font-serif">DJAMEELAA</span>
+          <span className="text-[10px] tracking-[0.2em] text-stone-500 uppercase">Scent Your Story</span>
         </Link>
 
-        {/* DESKTOP NAVIGATION LINKS */}
-        <div className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-wider text-brand-charcoal/80">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="hover:text-brand-burgundy transition-colors py-1"
-            >
-              {link.name}
-            </Link>
-          ))}
-        </div>
+        {/* Menu Navigasi Tengah */}
+        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-stone-700">
+          <Link href="/." className="hover:text-black transition">Utama</Link>
+          <Link href="/shop" className="hover:text-black transition">Koleksi</Link>
+          <Link href="/about" className="hover:text-black transition">Tentang Kami</Link>
+          <Link href="/shop" className="hover:text-black transition">Jurnal</Link>
+          <Link href="/track-order" className="hover:text-black transition">Track Order</Link>
+        </nav>
 
-        {/* ACTION ICONS (Search, Account, Cart, Mobile Toggle) */}
-        <div className="flex items-center gap-4 sm:gap-5 text-brand-burgundy">
-          <button
-            aria-label="Cari"
-            className="p-1.5 hover:text-brand-rose transition-colors"
-          >
-            <Search className="w-5 h-5" />
+        {/* Ikon Kanan (Carian, Akaun, Troli) */}
+        <div className="flex items-center gap-5 text-stone-700">
+          <button aria-label="Cari" className="hover:text-black transition">
+            <Search size={20} />
           </button>
-
-          <Link
-            href="/track-order"
-            aria-label="Akaun Saya"
-            className="p-1.5 hover:text-brand-rose transition-colors hidden sm:block"
-          >
-            <User className="w-5 h-5" />
+          <Link href="/shop" aria-label="Akaun" className="hover:text-black transition">
+            <User size={20} />
           </Link>
-
-          <Link
-            href="/cart"
+          
+          {/* Ikon Troli Dinamik */}
+          <button 
+            onClick={() => setIsOpen(true)}
+            className="relative p-1 hover:text-black transition flex items-center"
             aria-label="Troli"
-            className="p-1.5 hover:text-brand-rose transition-colors relative"
           >
-            <ShoppingBag className="w-5 h-5" />
-            <span className="absolute -top-1 -right-1 bg-brand-burgundy text-brand-beige text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-              2
-            </span>
-          </Link>
-
-          {/* MOBILE MENU BUTTON */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-1.5 text-brand-burgundy"
-            aria-label="Toggle Navigation Menu"
-          >
-            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            <ShoppingBag size={20} />
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#A86B6C] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm">
+                {totalItems}
+              </span>
+            )}
           </button>
         </div>
-      </div>
 
-      {/* MOBILE DROPDOWN MENU */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden bg-brand-beige border-b border-brand-sand px-6 py-6 space-y-4 animate-in slide-in-from-top-2">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block text-sm font-semibold uppercase tracking-wider text-brand-burgundy hover:text-brand-rose transition-colors"
-            >
-              {link.name}
-            </Link>
-          ))}
-          <div className="pt-4 border-t border-brand-sand flex justify-between items-center text-xs text-brand-charcoal/70">
-            <Link
-              href="/track-order"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="font-semibold text-brand-burgundy"
-            >
-              Akaun Saya / Semak Status
-            </Link>
-          </div>
-        </div>
-      )}
-    </nav>
+      </div>
+    </header>
   );
 }

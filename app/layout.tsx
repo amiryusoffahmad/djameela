@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import CartDrawer from "../components/CartDrawer";
 
 export const metadata: Metadata = {
   title: "DJAMEELAA - Scent Your Story",
@@ -15,6 +16,7 @@ export default function RootLayout({
     <html lang="ms">
       <body className="bg-brand-beige text-brand-charcoal antialiased">
         <main>{children}</main>
+        <CartDrawer />
       </body>
     </html>
   );

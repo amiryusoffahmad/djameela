@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getProducts } from "@/lib/woocommerce";
 import { Star } from "lucide-react";
 import Navbar from "@/components/Navbar";
-
+export const dynamic = 'force-dynamic';
 interface ProductNode {
   id: string;
   name: string;

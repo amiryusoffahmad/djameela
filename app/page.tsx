@@ -4,7 +4,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { Sparkles, ShieldCheck, Truck, CreditCard, ArrowRight } from "lucide-react";
 import { fetchGraphQL } from "@/lib/woocommerce";
-
+export const dynamic = 'force-dynamic';
 // Query GraphQL yang lebih selamat (mengelakkan ralat jika produk tiada imej)
 const GET_HOME_PRODUCTS = `
   query GetHomeProducts {

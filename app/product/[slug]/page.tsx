@@ -1,3 +1,4 @@
+
 import Image from "next/image";
 import Link from "next/link";
 import { getProductBySlug } from "@/lib/woocommerce";
@@ -13,6 +14,8 @@ import {
   CreditCard, 
   ShieldCheck 
 } from "lucide-react";
+
+export const dynamic = 'force-dynamic';
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
